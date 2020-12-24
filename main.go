@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/gotk3/gotk3/cairo"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 )
 
@@ -12,13 +14,13 @@ func main() {
 
 	// gui boilerplate
 	win, _ := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
-	da, _ := gtk.DrawingAreaNew()
-	win.Add(da)
+	drawingArea, _ := gtk.DrawingAreaNew()
+	win.Add(drawingArea)
 	win.SetTitle("Arrow keys")
 	win.Connect("destroy", gtk.MainQuit)
 	win.ShowAll()
 
-	da.Connect("draw", func(da *gtk.DrawingArea, cr *cairo.Context) {
+	drawingArea.Connect("draw", func(da *gtk.DrawingArea, cr *cairo.Context) {
 		cr.SetSourceRGB(0, 50, 0)
 		cr.Arc(50, 50, 10, 0, 2*math.Pi)
 		cr.ClosePath()
@@ -33,6 +35,20 @@ func main() {
 
 		cr.SetSourceRGB(0, 0, 50)
 		cr.ShowText(msg)
+	})
+
+	target, _ := gtk.TargetEntryNew("STRING", gtk.TARGET_SAME_APP, 0)
+	drawingArea.DragSourceSet(
+		gdk.ModifierType(gdk.ALL_EVENTS_MASK),
+		[]gtk.TargetEntry{*target},
+		gdk.ACTION_COPY,
+	)
+
+	drawingArea.Connect("drag-begin", func(
+		da *gtk.DrawingArea,
+		dc *gdk.DragContext,
+	) {
+		fmt.Println("drag-begin")
 	})
 
 	gtk.Main()
