@@ -1,42 +1,39 @@
 package main
 
 import (
-	"log"
+	"math"
 
+	"github.com/gotk3/gotk3/cairo"
 	"github.com/gotk3/gotk3/gtk"
 )
 
 func main() {
-	// Initialize GTK without parsing any command line arguments.
 	gtk.Init(nil)
 
-	// Create a new toplevel window, set its title, and connect it to the
-	// "destroy" signal to exit the GTK main loop when it is destroyed.
-	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
-	if err != nil {
-		log.Fatal("Unable to create window:", err)
-	}
-	win.SetTitle("Simple Example")
-	win.Connect("destroy", func() {
-		gtk.MainQuit()
-	})
-
-	// Create a new label widget to show in the window.
-	l, err := gtk.LabelNew("Hello, gotk3!")
-	if err != nil {
-		log.Fatal("Unable to create label:", err)
-	}
-
-	// Add the label to the window.
-	win.Add(l)
-
-	// Set the default window size.
-	win.SetDefaultSize(800, 600)
-
-	// Recursively show all widgets contained in this window.
+	// gui boilerplate
+	win, _ := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
+	da, _ := gtk.DrawingAreaNew()
+	win.Add(da)
+	win.SetTitle("Arrow keys")
+	win.Connect("destroy", gtk.MainQuit)
 	win.ShowAll()
 
-	// Begin executing the GTK main loop.  This blocks until
-	// gtk.MainQuit() is run.
+	da.Connect("draw", func(da *gtk.DrawingArea, cr *cairo.Context) {
+		cr.SetSourceRGB(0, 50, 0)
+		cr.Arc(50, 50, 10, 0, 2*math.Pi)
+		cr.ClosePath()
+		cr.Fill()
+
+		cr.SelectFontFace("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+		cr.SetFontSize(10.0)
+
+		msg := "A"
+		extents := cr.TextExtents(msg)
+		cr.MoveTo(50-(extents.Height/2), 50+(extents.Width/2))
+
+		cr.SetSourceRGB(0, 0, 50)
+		cr.ShowText(msg)
+	})
+
 	gtk.Main()
 }
