@@ -1,4 +1,4 @@
-FROM fedora
+FROM fedora AS go-gtk3
 
 ENV GOPATH=/go
 ENV GOBIN=${GOPATH}/bin
@@ -8,11 +8,3 @@ RUN yum install -y golang.x86_64 libcanberra-gtk3.x86_64 glib2-devel.x86_64 cair
 RUN mkdir /go
 
 RUN go get github.com/gotk3/gotk3/gtk
-
-RUN mkdir -p /go/src/github.com/test
-
-WORKDIR /go/src/github.com/test
-
-COPY main.go ./
-
-CMD [ "go", "run", "main.go" ]
