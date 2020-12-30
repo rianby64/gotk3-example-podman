@@ -5,7 +5,6 @@ $(eval CONTAINER_ID_EXAMPLES := $(shell podman ps -a | grep $(GO_GTK3_EXAMPLES) 
 
 examples:
 ifeq ($(CONTAINER_ID_EXAMPLES),)
-	podman build -f vscode.dockerfile -t vscode .
 	podman build -f go-gtk3.dockerfile -t go-gtk3 .
 	podman build -f go-gtk3-examples.dockerfile -t $(GO_GTK3_EXAMPLES) .
 	podman run -it --rm \
@@ -27,7 +26,6 @@ $(eval CONTAINER_ID_CANVAS_EXAMPLE := $(shell podman ps -a | grep $(GO_GTK3_CANV
 
 canvas:
 ifeq ($(CONTAINER_ID_CANVAS_EXAMPLE),)
-	podman build -f vscode.dockerfile -t vscode .
 	podman build -f go-gtk3.dockerfile -t go-gtk3 .
 	podman build -f go-gtk3.example-canvas.dockerfile -t $(GO_GTK3_CANVAS_EXAMPLE) .
 	podman run -it --rm \

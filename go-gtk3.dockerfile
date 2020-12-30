@@ -1,4 +1,4 @@
-FROM vscode AS go-gtk3
+FROM rianby64/vscode AS go-gtk3
 
 USER rianby64
 
