@@ -15,7 +15,10 @@ RUN yum install -y \
     goocanvas2-devel.x86_64 \
     cairo-gobject-devel.x86_64 \
     pango-devel.x86_64 \
-    gtk3-devel.x86_64
+    gtk3-devel.x86_64 \
+    gdb.x86_64 \
+    gnome-terminal.x86_64 \
+    dbus-x11.x86_64
 
 USER rianby64
 

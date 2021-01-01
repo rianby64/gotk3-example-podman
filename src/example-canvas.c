@@ -90,3 +90,9 @@ on_delete_event (GtkWidget *window,
 {
   exit (0);
 }
+
+
+
+/*
+pkg-config goocanvas-2.0 --libs --cflags
+*/
