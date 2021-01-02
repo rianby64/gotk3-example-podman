@@ -1,5 +1,7 @@
 FROM go-gtk3
 
+USER rianby64
+
 WORKDIR $GOPATH/src/github.com
 
 RUN git clone https://github.com/gotk3/gotk3-examples.git $GOPATH/src/github.com/gotk3-examples

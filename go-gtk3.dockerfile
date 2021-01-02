@@ -1,5 +1,15 @@
 FROM rianby64/vscode AS go-gtk3
 
+RUN useradd rianby64
+
+USER rianby64
+
+ENV HOME=/home/rianby64
+
+WORKDIR $HOME
+
+USER root
+
 USER rianby64
 
 ENV GOPATH=$HOME/go
@@ -16,12 +26,30 @@ RUN yum install -y \
     cairo-gobject-devel.x86_64 \
     pango-devel.x86_64 \
     gtk3-devel.x86_64 \
-    gdb.x86_64 \
-    gnome-terminal.x86_64 \
-    dbus-x11.x86_64
+    gdb.x86_64
 
 USER rianby64
 
-RUN go get github.com/gotk3/gotk3/gtk
+RUN go get -v github.com/ramya-rao-a/go-outline \
+    github.com/go-delve/delve/cmd/dlv \
+    github.com/uudashr/gopkgs/cmd/gopkgs \
+    golang.org/x/tools/cmd/guru \
+    github.com/sqs/goreturns \
+    golang.org/x/tools/cmd/gorename \
+    github.com/acroca/go-symbols \
+    github.com/cweill/gotests/... \
+    github.com/fatih/gomodifytags \
+    github.com/josharian/impl \
+    github.com/davidrjenni/reftools/cmd/fillstruct \
+    github.com/haya14busa/goplay/cmd/goplay \
+    github.com/godoctor/godoctor \
+    github.com/stamblerre/gocode \
+    github.com/rogpeppe/godef \
+    golang.org/x/lint/golint \
+    golang.org/x/tools/gopls
+
+RUN code --install-extension golang.go
+
+RUN go get -v github.com/gotk3/gotk3/gtk
 
 CMD ["bash"]

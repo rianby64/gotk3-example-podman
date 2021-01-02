@@ -17,6 +17,7 @@ ifeq ($(CONTAINER_ID_EXAMPLES),)
 		--device /dev/snd \
 		--ipc=host \
 		--userns keep-id \
+		--security-opt seccomp=unconfined \
 		-u ${USER} \
 		$(GO_GTK3_EXAMPLES)
 else
@@ -40,6 +41,7 @@ ifeq ($(CONTAINER_ID_CANVAS_EXAMPLE),)
 		--device /dev/snd \
 		--ipc=host \
 		--userns keep-id \
+		--security-opt seccomp=unconfined \
 		-u ${USER} \
 		$(GO_GTK3_CANVAS_EXAMPLE)
 else
