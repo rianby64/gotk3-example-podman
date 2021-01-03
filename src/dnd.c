@@ -76,15 +76,12 @@ setup_dnd_handlers (GooCanvas *canvas,
 }
 
 
-int
-main (int argc, char *argv[])
+GtkWidget*
+create_window_canvas ()
 {
 
   GtkWidget *window, *scrolled_win, *canvas;
-  GooCanvasItem *root, *rect_item, *text_item, *parent1;
-  GooCanvasItem* child;
-
-  gtk_init (&argc, &argv);
+  GooCanvasItem *root;
 
   /* Create the window and widgets. */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -104,25 +101,61 @@ main (int argc, char *argv[])
   gtk_widget_show (canvas);
   gtk_container_add (GTK_CONTAINER (scrolled_win), canvas);
 
-  root = goo_canvas_get_root_item (GOO_CANVAS (canvas));
+  return canvas;
+}
 
+int VERTEX_RADIUS = 30;
 
-	parent1 = goo_canvas_group_new (root,
-    "x", 100.0,
-    "y", 100.0,
-    NULL);
+GooCanvasItem*
+create_vertex(GtkWidget *canvas,
+              GooCanvasItem *parent,
+              double x,
+              double y,
+              char *txt)
+{
 
-  child = goo_canvas_ellipse_new (parent1, 0, 0, 60, 60,
-    "fill-color", "red",
-    "line-width", 1.0,
-    NULL);
+  GooCanvasItem *g, *ellipse, *text;
+	g = goo_canvas_group_new (parent,
+        "x", x,
+        "y", y,
+        NULL);
 
-  text_item = goo_canvas_text_new (parent1, "A", 0, 0, -1,
+  ellipse = goo_canvas_ellipse_new (g, 0, 0, VERTEX_RADIUS, VERTEX_RADIUS,
+              "fill-color", "mediumseagreen",
+              "line-width", 1.0,
+              NULL);
+
+  text = goo_canvas_text_new (g, txt, 0, 0, -1,
 				   GOO_CANVAS_ANCHOR_CENTER,
 				   "font", "Sans 24",
 				   NULL);
 
-  setup_dnd_handlers (GOO_CANVAS (canvas), parent1);
+  setup_dnd_handlers (GOO_CANVAS (canvas), g);
+  return g;
+}
+
+int
+main (int argc, char *argv[])
+{
+  GtkWidget *canvas;
+  GooCanvasItem *root, *vertex1, *vertex2, *vertex3;
+
+  gtk_init (&argc, &argv);
+
+  canvas = create_window_canvas();
+  root = goo_canvas_get_root_item (GOO_CANVAS (canvas));
+
+  vertex1 = create_vertex(canvas, root, 100.0, 100.0, "A");
+  vertex2 = create_vertex(canvas, root, 100.0, 100.0, "B");
+  vertex3 = create_vertex(canvas, root, 100.0, 100.0, "C");
+
+
+  GooCanvasItem *p = goo_canvas_path_new (root,
+    "M 20 20 L 400 400",
+    "stroke-color", "green",
+    NULL);
+
+  g_object_set(G_OBJECT(p), "data", "M 50 10 L 400 400");
 
   gtk_main ();
   return 0;
