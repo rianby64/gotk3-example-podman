@@ -14,8 +14,6 @@ on_button_press_event_cb (GooCanvasItem *item,
                           GdkEventButton *event,
                           gpointer user_data)
 {
-
-  g_print ("button press event state = %i\n", event->state);
   if (event->button == 1)
   {
       drag_item = item;
@@ -83,7 +81,7 @@ main (int argc, char *argv[])
 {
 
   GtkWidget *window, *scrolled_win, *canvas;
-  GooCanvasItem *root, *rect_item, *text_item;
+  GooCanvasItem *root, *rect_item, *text_item, *parent1;
   GooCanvasItem* child;
 
   gtk_init (&argc, &argv);
@@ -109,8 +107,22 @@ main (int argc, char *argv[])
   root = goo_canvas_get_root_item (GOO_CANVAS (canvas));
 
 
-  child = goo_canvas_ellipse_new (root, 150, 100, 50, 50, "fill-color", "red", NULL);
-  setup_dnd_handlers (GOO_CANVAS (canvas), child);
+	parent1 = goo_canvas_group_new (root,
+    "x", 100.0,
+    "y", 100.0,
+    NULL);
+
+  child = goo_canvas_ellipse_new (parent1, 0, 0, 60, 60,
+    "fill-color", "red",
+    "line-width", 1.0,
+    NULL);
+
+  text_item = goo_canvas_text_new (parent1, "A", 0, 0, -1,
+				   GOO_CANVAS_ANCHOR_CENTER,
+				   "font", "Sans 24",
+				   NULL);
+
+  setup_dnd_handlers (GOO_CANVAS (canvas), parent1);
 
   gtk_main ();
   return 0;
