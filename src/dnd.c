@@ -2,6 +2,18 @@
 #include <stdlib.h>
 #include <goocanvas.h>
 
+GtkWidget *create_window_canvas (void);
+
+GooCanvasItem *create_node (GtkWidget     *canvas,
+                            GooCanvasItem *parent,
+                            double         x,
+                            double         y,
+                            gchar         *txt);
+
+void connect_two_nodes (GooCanvasItem *gedges,
+                        GooCanvasItem *node1,
+                        GooCanvasItem *node2);
+
 GooCanvasItem   *drag_item = NULL;
 gdouble          drag_x = 0.0;
 gdouble          drag_y = 0.0;
@@ -18,10 +30,10 @@ IDObject IDObjects[2];
 
 
 static gboolean
-on_button_press_event_cb (GooCanvasItem *item,
-                          GooCanvasItem *target_item,
+on_button_press_event_cb (GooCanvasItem  *item,
+                          GooCanvasItem  *target_item,
                           GdkEventButton *event,
-                          gpointer user_data)
+                          gpointer        user_data)
 {
   if (event->button == 1)
   {
@@ -34,10 +46,15 @@ on_button_press_event_cb (GooCanvasItem *item,
                     "y", &item_y,
                     NULL);
 
-      goo_canvas_pointer_grab (GOO_CANVAS (user_data), item, GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_RELEASE_MASK, NULL, event->time);
+      goo_canvas_pointer_grab (GOO_CANVAS (user_data),
+                               item,
+                               GDK_POINTER_MOTION_MASK |
+                                 GDK_POINTER_MOTION_HINT_MASK |
+                                 GDK_BUTTON_RELEASE_MASK,
+                               NULL,
+                               event->time);
       return TRUE;
   }
-
   return FALSE;
 }
 
@@ -45,7 +62,7 @@ static gboolean
 on_button_release_event_cb (GooCanvasItem  *item,
                             GooCanvasItem  *target_item,
                             GdkEventButton *event,
-                            gpointer user_data)
+                            gpointer        user_data)
 {
   if (drag_item == item && drag_item != NULL)
   {
@@ -61,7 +78,7 @@ static gboolean
 on_motion_notify_event_cb (GooCanvasItem  *item,
                            GooCanvasItem  *target_item,
                            GdkEventMotion *event,
-                           gpointer user_data)
+                           gpointer        user_data)
 {
   if (drag_item == item && drag_item != NULL)
   {
@@ -71,30 +88,51 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
     gdouble x = item_x + rel_x;
     gdouble y = item_y + rel_y;
 
-    g_object_set (G_OBJECT (item), "x", x, "y", y, NULL);
+    g_object_set (G_OBJECT (item),
+                  "x", x,
+                  "y", y,
+                  NULL);
 
     if (drag_item == IDObjects[0].node) {
       gdouble px, py;
-      g_object_get(G_OBJECT(IDObjects[1].node),
-        "x", &px,
-        "y", &py,
-        NULL);
+      g_object_get (G_OBJECT (IDObjects[1].node),
+                    "x", &px,
+                    "y", &py,
+                    NULL);
 
       GString *string = g_string_new(NULL);
-      g_string_printf(string, "M %d %d L %d %d", (int)x, (int)y, (int)px, (int)py);
-      g_object_set(G_OBJECT(IDObjects[0].edge), "data", string->str);
+      g_string_printf (string,
+                       "M %d %d L %d %d",
+                       (int)x,
+                       (int)y,
+                       (int)px,
+                       (int)py);
+
+      g_object_set (G_OBJECT (IDObjects[0].edge),
+                    "data",
+                    string->str,
+                    NULL);
     }
 
     if (drag_item == IDObjects[1].node) {
       gdouble px, py;
-      g_object_get(G_OBJECT(IDObjects[0].node),
-        "x", &px,
-        "y", &py,
-        NULL);
+      g_object_get(G_OBJECT (IDObjects[0].node),
+                   "x", &px,
+                   "y", &py,
+                   NULL);
 
       GString *string = g_string_new(NULL);
-      g_string_printf(string, "M %d %d L %d %d", (int)px, (int)py, (int)x, (int)y);
-      g_object_set(G_OBJECT(IDObjects[1].edge), "data", string->str);
+      g_string_printf (string,
+                       "M %d %d L %d %d",
+                       (int)px,
+                       (int)py,
+                       (int)x,
+                       (int)y);
+
+      g_object_set (G_OBJECT(IDObjects[1].edge),
+                    "data",
+                    string->str,
+                    NULL);
     }
     return TRUE;
   }
@@ -103,31 +141,37 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
 }
 
 static void
-setup_dnd_handlers (GooCanvas *canvas,
+setup_dnd_handlers (GooCanvas     *canvas,
                     GooCanvasItem *item)
 {
-  g_signal_connect (G_OBJECT (item), "button-press-event", G_CALLBACK (on_button_press_event_cb), canvas);
-  g_signal_connect (G_OBJECT (item), "button-release-event", G_CALLBACK (on_button_release_event_cb), canvas);
-  g_signal_connect (G_OBJECT (item), "motion-notify-event", G_CALLBACK (on_motion_notify_event_cb), canvas);
+  g_signal_connect (G_OBJECT (item),
+                    "button-press-event",
+                    G_CALLBACK (on_button_press_event_cb),
+                    canvas);
+  g_signal_connect (G_OBJECT (item),
+                    "button-release-event",
+                    G_CALLBACK (on_button_release_event_cb),
+                    canvas);
+  g_signal_connect (G_OBJECT (item),
+                    "motion-notify-event",
+                    G_CALLBACK (on_motion_notify_event_cb),
+                    canvas);
 }
 
 
 GtkWidget*
-create_window_canvas ()
+create_window_canvas (void)
 {
 
   GtkWidget *window, *scrolled_win, *canvas;
-  GooCanvasItem *root;
 
-  /* Create the window and widgets. */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size (GTK_WINDOW (window), 640, 600);
   gtk_widget_show (window);
   g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
-  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_win),
-				       GTK_SHADOW_IN);
+  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_win), GTK_SHADOW_IN);
   gtk_widget_show (scrolled_win);
   gtk_container_add (GTK_CONTAINER (window), scrolled_win);
 
@@ -143,60 +187,58 @@ create_window_canvas ()
 int node_RADIUS = 30;
 
 GooCanvasItem*
-create_node(GtkWidget *canvas,
-              GooCanvasItem *parent,
-              double x,
-              double y,
-              gchar *txt)
+create_node (GtkWidget     *canvas,
+             GooCanvasItem *parent,
+             double         x,
+             double         y,
+             gchar         *txt)
 {
 
-  GooCanvasItem *g, *ellipse, *text;
+  GooCanvasItem *g;
 	g = goo_canvas_group_new (parent,
-        "x", x,
-        "y", y,
-        NULL);
+                            "x", x,
+                            "y", y,
+                            NULL);
 
-  ellipse = goo_canvas_ellipse_new (g, 0, 0, node_RADIUS, node_RADIUS,
-              "fill-color", "mediumseagreen",
-              "line-width", 1.0,
-              NULL);
+  goo_canvas_ellipse_new (g, 0, 0, node_RADIUS, node_RADIUS,
+                          "fill-color", "mediumseagreen",
+                          NULL);
 
-  text = goo_canvas_text_new (g, txt, 0, 0, -1,
-				   GOO_CANVAS_ANCHOR_CENTER,
-				   "font", "Sans 24",
-				   NULL);
+  goo_canvas_text_new (g, txt, 0, 0, -1,
+				               GOO_CANVAS_ANCHOR_CENTER,
+				               "font", "Sans 24",
+				               NULL);
 
   setup_dnd_handlers (GOO_CANVAS (canvas), g);
   return g;
 }
 
-
 void
-connect_two_nodes(GooCanvasItem *gedges, GooCanvasItem *node1, GooCanvasItem *node2)
+connect_two_nodes (GooCanvasItem *gedges,
+                   GooCanvasItem *node1,
+                   GooCanvasItem *node2)
 {
   gdouble x1, y1, x2, y2;
-  g_object_get(G_OBJECT(node1),
-    "x", &x1,
-    "y", &y1,
-    NULL);
-  g_object_get(G_OBJECT(node2),
-    "x", &x2,
-    "y", &y2,
-    NULL);
+  g_object_get (G_OBJECT(node1),
+                "x", &x1,
+                "y", &y1,
+                NULL);
+  g_object_get (G_OBJECT(node2),
+                "x", &x2,
+                "y", &y2,
+                NULL);
 
-  GString *path = g_string_new(NULL);
-  g_string_printf(path, "M %d %d L %d %d",
-    (int)x1,
-    (int)y1,
-    (int)x2,
-    (int)y2);
-
-  g_print(path->str);
+  GString *path = g_string_new (NULL);
+  g_string_printf (path, "M %d %d L %d %d",
+                   (int)x1,
+                   (int)y1,
+                   (int)x2,
+                   (int)y2);
 
   GooCanvasItem *p = goo_canvas_path_new (gedges,
-    path->str,
-    "stroke-color", "green",
-    NULL);
+                                          path->str,
+                                          "stroke-color", "green",
+                                          NULL);
 
   IDObject id1, id2;
   id1.node = node1;
@@ -213,7 +255,7 @@ int
 main (int argc, char *argv[])
 {
   GtkWidget *canvas;
-  GooCanvasItem *root, *node1, *node2, *node3;
+  GooCanvasItem *root, *node1, *node2;
 
   gtk_init (&argc, &argv);
 
@@ -222,15 +264,15 @@ main (int argc, char *argv[])
 
   GooCanvasItem *gedges;
 	gedges = goo_canvas_group_new (root,
-        "x", 0.0,
-        "y", 0.0,
-        NULL);
+                                 "x", 0.0,
+                                 "y", 0.0,
+                                 NULL);
 
   GooCanvasItem *gnodes;
 	gnodes = goo_canvas_group_new (root,
-        "x", 0.0,
-        "y", 0.0,
-        NULL);
+                                 "x", 0.0,
+                                 "y", 0.0,
+                                 NULL);
 
   node1 = create_node(canvas, gnodes, 100.0, 100.0, "A");
   node2 = create_node(canvas, gnodes, 150.0, 150.0, "B");
