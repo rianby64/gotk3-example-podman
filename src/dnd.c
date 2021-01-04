@@ -10,7 +10,7 @@ gdouble          item_y = 0.0;
 
 
 typedef struct idobjects {
-  GooCanvasItem *vertex;
+  GooCanvasItem *node;
   GooCanvasItem *edge;
 } IDObject;
 
@@ -73,27 +73,27 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
 
     g_object_set (G_OBJECT (item), "x", x, "y", y, NULL);
 
-    if (drag_item == IDObjects[0].vertex) {
+    if (drag_item == IDObjects[0].node) {
       gdouble px, py;
-      g_object_get(G_OBJECT(IDObjects[1].vertex),
+      g_object_get(G_OBJECT(IDObjects[1].node),
         "x", &px,
         "y", &py,
         NULL);
 
       GString *string = g_string_new(NULL);
-      g_string_printf(string, "M %f %f L %f %f", (float)x, (float)y, (float)px, (float)py);
+      g_string_printf(string, "M %d %d L %d %d", (int)x, (int)y, (int)px, (int)py);
       g_object_set(G_OBJECT(IDObjects[0].edge), "data", string->str);
     }
 
-    if (drag_item == IDObjects[1].vertex) {
+    if (drag_item == IDObjects[1].node) {
       gdouble px, py;
-      g_object_get(G_OBJECT(IDObjects[0].vertex),
+      g_object_get(G_OBJECT(IDObjects[0].node),
         "x", &px,
         "y", &py,
         NULL);
 
       GString *string = g_string_new(NULL);
-      g_string_printf(string, "M %f %f L %f %f", (float)px, (float)py, (float)x, (float)y);
+      g_string_printf(string, "M %d %d L %d %d", (int)px, (int)py, (int)x, (int)y);
       g_object_set(G_OBJECT(IDObjects[1].edge), "data", string->str);
     }
     return TRUE;
@@ -140,10 +140,10 @@ create_window_canvas ()
   return canvas;
 }
 
-int VERTEX_RADIUS = 30;
+int node_RADIUS = 30;
 
 GooCanvasItem*
-create_vertex(GtkWidget *canvas,
+create_node(GtkWidget *canvas,
               GooCanvasItem *parent,
               double x,
               double y,
@@ -156,7 +156,7 @@ create_vertex(GtkWidget *canvas,
         "y", y,
         NULL);
 
-  ellipse = goo_canvas_ellipse_new (g, 0, 0, VERTEX_RADIUS, VERTEX_RADIUS,
+  ellipse = goo_canvas_ellipse_new (g, 0, 0, node_RADIUS, node_RADIUS,
               "fill-color", "mediumseagreen",
               "line-width", 1.0,
               NULL);
@@ -170,11 +170,50 @@ create_vertex(GtkWidget *canvas,
   return g;
 }
 
+
+void
+connect_two_nodes(GooCanvasItem *gedges, GooCanvasItem *node1, GooCanvasItem *node2)
+{
+  gdouble x1, y1, x2, y2;
+  g_object_get(G_OBJECT(node1),
+    "x", &x1,
+    "y", &y1,
+    NULL);
+  g_object_get(G_OBJECT(node2),
+    "x", &x2,
+    "y", &y2,
+    NULL);
+
+  GString *path = g_string_new(NULL);
+  g_string_printf(path, "M %d %d L %d %d",
+    (int)x1,
+    (int)y1,
+    (int)x2,
+    (int)y2);
+
+  g_print(path->str);
+
+  GooCanvasItem *p = goo_canvas_path_new (gedges,
+    path->str,
+    "stroke-color", "green",
+    NULL);
+
+  IDObject id1, id2;
+  id1.node = node1;
+  id1.edge = p;
+
+  id2.node = node2;
+  id2.edge = p;
+
+  IDObjects[0] = id1;
+  IDObjects[1] = id2;
+}
+
 int
 main (int argc, char *argv[])
 {
   GtkWidget *canvas;
-  GooCanvasItem *root, *vertex1, *vertex2, *vertex3;
+  GooCanvasItem *root, *node1, *node2, *node3;
 
   gtk_init (&argc, &argv);
 
@@ -187,29 +226,16 @@ main (int argc, char *argv[])
         "y", 0.0,
         NULL);
 
-  GooCanvasItem *gvertices;
-	gvertices = goo_canvas_group_new (root,
+  GooCanvasItem *gnodes;
+	gnodes = goo_canvas_group_new (root,
         "x", 0.0,
         "y", 0.0,
         NULL);
 
-  vertex1 = create_vertex(canvas, gvertices, 100.0, 100.0, "A");
-  vertex2 = create_vertex(canvas, gvertices, 100.0, 100.0, "B");
+  node1 = create_node(canvas, gnodes, 100.0, 100.0, "A");
+  node2 = create_node(canvas, gnodes, 150.0, 150.0, "B");
 
-  GooCanvasItem *p = goo_canvas_path_new (gedges,
-    "M 100 100 L 100 100",
-    "stroke-color", "green",
-    NULL);
-
-  IDObject id1, id2;
-  id1.vertex = vertex1;
-  id1.edge = p;
-
-  id2.vertex = vertex2;
-  id2.edge = p;
-
-  IDObjects[0] = id1;
-  IDObjects[1] = id2;
+  connect_two_nodes (gedges, node1, node2);
 
   gtk_main ();
   return 0;
