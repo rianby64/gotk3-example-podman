@@ -2,18 +2,6 @@
 #include <stdlib.h>
 #include <goocanvas.h>
 
-GtkWidget *create_window_canvas (void);
-
-GooCanvasItem *create_node (GtkWidget     *canvas,
-                            GooCanvasItem *parent,
-                            double         x,
-                            double         y,
-                            gchar         *txt);
-
-void connect_two_nodes (GooCanvasItem *gedges,
-                        GooCanvasItem *node1,
-                        GooCanvasItem *node2);
-
 GooCanvasItem   *drag_item = NULL;
 gdouble          drag_x = 0.0;
 gdouble          drag_y = 0.0;
@@ -21,13 +9,12 @@ gdouble          item_x = 0.0;
 gdouble          item_y = 0.0;
 
 
-typedef struct idobjects {
+struct IDObject {
   GooCanvasItem *node;
   GooCanvasItem *edge;
-} IDObject;
+};
 
-IDObject IDObjects[2];
-
+GArray *garray = NULL;
 
 static gboolean
 on_button_press_event_cb (GooCanvasItem  *item,
@@ -88,14 +75,18 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
     gdouble x = item_x + rel_x;
     gdouble y = item_y + rel_y;
 
+    struct IDObject idobject1 = g_array_index (garray, struct IDObject, 0);
+    struct IDObject idobject2 = g_array_index (garray, struct IDObject, 1);
+
+
     g_object_set (G_OBJECT (item),
                   "x", x,
                   "y", y,
                   NULL);
 
-    if (drag_item == IDObjects[0].node) {
+    if (drag_item == idobject1.node) {
       gdouble px, py;
-      g_object_get (G_OBJECT (IDObjects[1].node),
+      g_object_get (G_OBJECT (idobject2.node),
                     "x", &px,
                     "y", &py,
                     NULL);
@@ -108,15 +99,15 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                        (int)px,
                        (int)py);
 
-      g_object_set (G_OBJECT (IDObjects[0].edge),
+      g_object_set (G_OBJECT (idobject1.edge),
                     "data",
                     string->str,
                     NULL);
     }
 
-    if (drag_item == IDObjects[1].node) {
+    if (drag_item == idobject2.node) {
       gdouble px, py;
-      g_object_get(G_OBJECT (IDObjects[0].node),
+      g_object_get(G_OBJECT (idobject1.node),
                    "x", &px,
                    "y", &py,
                    NULL);
@@ -129,7 +120,7 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                        (int)x,
                        (int)y);
 
-      g_object_set (G_OBJECT(IDObjects[1].edge),
+      g_object_set (G_OBJECT(idobject2.edge),
                     "data",
                     string->str,
                     NULL);
@@ -158,8 +149,14 @@ setup_dnd_handlers (GooCanvas     *canvas,
                     canvas);
 }
 
+static void
+cleanup (void)
+{
+  g_array_free (garray, TRUE);
+  gtk_main_quit ();
+}
 
-GtkWidget*
+static GtkWidget*
 create_window_canvas (void)
 {
 
@@ -168,7 +165,7 @@ create_window_canvas (void)
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size (GTK_WINDOW (window), 640, 600);
   gtk_widget_show (window);
-  g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+  g_signal_connect (window, "destroy", G_CALLBACK (cleanup), NULL);
 
   scrolled_win = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_win), GTK_SHADOW_IN);
@@ -186,7 +183,7 @@ create_window_canvas (void)
 
 int node_RADIUS = 30;
 
-GooCanvasItem*
+static GooCanvasItem*
 create_node (GtkWidget     *canvas,
              GooCanvasItem *parent,
              double         x,
@@ -213,7 +210,7 @@ create_node (GtkWidget     *canvas,
   return g;
 }
 
-void
+static void
 connect_two_nodes (GooCanvasItem *gedges,
                    GooCanvasItem *node1,
                    GooCanvasItem *node2)
@@ -240,15 +237,11 @@ connect_two_nodes (GooCanvasItem *gedges,
                                           "stroke-color", "green",
                                           NULL);
 
-  IDObject id1, id2;
-  id1.node = node1;
-  id1.edge = p;
+  struct IDObject id1 = {node1, p};
+  struct IDObject id2 = {node2, p};
 
-  id2.node = node2;
-  id2.edge = p;
-
-  IDObjects[0] = id1;
-  IDObjects[1] = id2;
+  g_array_append_val (garray, id1);
+  g_array_append_val (garray, id2);
 }
 
 int
@@ -256,6 +249,7 @@ main (int argc, char *argv[])
 {
   GtkWidget *canvas;
   GooCanvasItem *root, *node1, *node2;
+  garray = g_array_new (FALSE, FALSE, sizeof (struct IDObject));
 
   gtk_init (&argc, &argv);
 
@@ -276,6 +270,7 @@ main (int argc, char *argv[])
 
   node1 = create_node(canvas, gnodes, 100.0, 100.0, "A");
   node2 = create_node(canvas, gnodes, 150.0, 150.0, "B");
+  create_node(canvas, gnodes, 250.0, 150.0, "C");
 
   connect_two_nodes (gedges, node1, node2);
 
