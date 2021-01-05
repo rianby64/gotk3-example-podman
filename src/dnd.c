@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <goocanvas.h>
 
+#define GDK_EVENT(obj)	 		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GDK_TYPE_EVENT, GdkEvent))
+
 GooCanvasItem   *drag_item = NULL;
 gdouble          drag_x = 0.0;
 gdouble          drag_y = 0.0;
@@ -40,9 +42,9 @@ on_button_press_event_cb (GooCanvasItem  *item,
                                  GDK_BUTTON_RELEASE_MASK,
                                NULL,
                                event->time);
-      return TRUE;
+      return GDK_EVENT_STOP;
   }
-  return FALSE;
+  return GDK_EVENT_PROPAGATE;
 }
 
 static gboolean
@@ -55,10 +57,10 @@ on_button_release_event_cb (GooCanvasItem  *item,
   {
     goo_canvas_pointer_ungrab (GOO_CANVAS (user_data), drag_item, event->time);
     drag_item = NULL;
-    return TRUE;
+    return GDK_EVENT_STOP;
   }
 
-  return FALSE;
+  return GDK_EVENT_PROPAGATE;
 }
 
 static gboolean
@@ -125,10 +127,10 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                     string->str,
                     NULL);
     }
-    return TRUE;
+    return GDK_EVENT_STOP;
   }
 
-  return FALSE;
+  return GDK_EVENT_PROPAGATE;
 }
 
 static void
@@ -156,6 +158,25 @@ cleanup (void)
   gtk_main_quit ();
 }
 
+static gboolean
+user_function (GtkWidget      *widget,
+               GdkEventButton *event,
+               gpointer        user_data)
+{
+  if (event->button == GDK_BUTTON_SECONDARY) {
+    GtkWidget *menu = gtk_menu_new ();
+
+    GtkWidget *item = gtk_menu_item_new_with_label ("Go");
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    gtk_menu_popup_at_pointer (GTK_MENU (menu), GDK_EVENT (event));
+
+    return GDK_EVENT_STOP;
+  }
+  return GDK_EVENT_PROPAGATE;
+}
+
 static GtkWidget*
 create_window_canvas (void)
 {
@@ -177,6 +198,11 @@ create_window_canvas (void)
   goo_canvas_set_bounds (GOO_CANVAS (canvas), 0, 0, 1000, 1000);
   gtk_widget_show (canvas);
   gtk_container_add (GTK_CONTAINER (scrolled_win), canvas);
+
+  g_signal_connect (GOO_CANVAS (canvas),
+                    "button-release-event",
+                    G_CALLBACK(user_function),
+                    canvas);
 
   return canvas;
 }
