@@ -158,19 +158,48 @@ cleanup (void)
   gtk_main_quit ();
 }
 
+static void
+item1_activate_cb (GtkMenuItem *menuitem,
+                   gpointer     user_data)
+{
+  g_print("item1 activate\n");
+}
+
+static void
+item2_activate_cb (GtkMenuItem *menuitem,
+                   gpointer     user_data)
+{
+  g_print("item2 activate\n");
+}
+
 static gboolean
-user_function (GtkWidget      *widget,
+context_menu_cb (GtkWidget      *widget,
                GdkEventButton *event,
                gpointer        user_data)
 {
   if (event->button == GDK_BUTTON_SECONDARY) {
-    GtkWidget *menu = gtk_menu_new ();
+    GtkWidget *menu;
+    menu = gtk_menu_new ();
 
-    GtkWidget *item = gtk_menu_item_new_with_label ("Go");
+    GtkWidget *item1;
+    item1 = gtk_menu_item_new_with_label ("Item1");
+    g_signal_connect (GTK_MENU_ITEM (item1),
+                      "activate",
+                      G_CALLBACK(item1_activate_cb),
+                      GTK_MENU_SHELL (menu));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item1);
+    gtk_widget_show (item1);
 
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    GtkWidget *item2;
+    item2 = gtk_menu_item_new_with_label ("Item2");
+    g_signal_connect (GTK_MENU_ITEM (item2),
+                      "activate",
+                      G_CALLBACK(item2_activate_cb),
+                      GTK_MENU_SHELL (menu));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item2);
+    gtk_widget_show (item2);
 
-    gtk_menu_popup_at_pointer (GTK_MENU (menu), GDK_EVENT (event));
+    gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
 
     return GDK_EVENT_STOP;
   }
@@ -201,7 +230,7 @@ create_window_canvas (void)
 
   g_signal_connect (GOO_CANVAS (canvas),
                     "button-release-event",
-                    G_CALLBACK(user_function),
+                    G_CALLBACK(context_menu_cb),
                     canvas);
 
   return canvas;
