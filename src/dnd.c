@@ -10,6 +10,8 @@ gdouble          drag_y = 0.0;
 gdouble          item_x = 0.0;
 gdouble          item_y = 0.0;
 
+gboolean called_from_vertex = FALSE;
+gint     last_id = 0;
 
 struct IDObject {
   GooCanvasItem *node;
@@ -17,6 +19,7 @@ struct IDObject {
 };
 
 GArray *garray = NULL;
+GtkWidget *canvas = NULL;
 
 static gboolean
 on_button_press_event_cb (GooCanvasItem  *item,
@@ -24,7 +27,13 @@ on_button_press_event_cb (GooCanvasItem  *item,
                           GdkEventButton *event,
                           gpointer        user_data)
 {
-  if (event->button == 1)
+  if (event->button == GDK_BUTTON_SECONDARY)
+  {
+    called_from_vertex = TRUE;
+    return GDK_EVENT_STOP;
+  }
+
+  if (event->button == GDK_BUTTON_PRIMARY)
   {
       drag_item = item;
       drag_x = event->x;
@@ -93,7 +102,7 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                     "y", &py,
                     NULL);
 
-      GString *string = g_string_new(NULL);
+      GString *string = g_string_new (NULL);
       g_string_printf (string,
                        "M %d %d L %d %d",
                        (int)x,
@@ -114,7 +123,7 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                    "y", &py,
                    NULL);
 
-      GString *string = g_string_new(NULL);
+      GString *string = g_string_new (NULL);
       g_string_printf (string,
                        "M %d %d L %d %d",
                        (int)px,
@@ -134,21 +143,21 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
 }
 
 static void
-setup_dnd_handlers (GooCanvas     *canvas,
+setup_dnd_handlers (GooCanvas     *local_canvas,
                     GooCanvasItem *item)
 {
   g_signal_connect (G_OBJECT (item),
                     "button-press-event",
                     G_CALLBACK (on_button_press_event_cb),
-                    canvas);
+                    local_canvas);
   g_signal_connect (G_OBJECT (item),
                     "button-release-event",
                     G_CALLBACK (on_button_release_event_cb),
-                    canvas);
+                    local_canvas);
   g_signal_connect (G_OBJECT (item),
                     "motion-notify-event",
                     G_CALLBACK (on_motion_notify_event_cb),
-                    canvas);
+                    local_canvas);
 }
 
 static void
@@ -158,89 +167,11 @@ cleanup (void)
   gtk_main_quit ();
 }
 
-static void
-item1_activate_cb (GtkMenuItem *menuitem,
-                   gpointer     user_data)
-{
-  g_print("item1 activate\n");
-}
-
-static void
-item2_activate_cb (GtkMenuItem *menuitem,
-                   gpointer     user_data)
-{
-  g_print("item2 activate\n");
-}
-
-static gboolean
-context_menu_cb (GtkWidget      *widget,
-               GdkEventButton *event,
-               gpointer        user_data)
-{
-  if (event->button == GDK_BUTTON_SECONDARY) {
-    GtkWidget *menu;
-    menu = gtk_menu_new ();
-
-    GtkWidget *item1;
-    item1 = gtk_menu_item_new_with_label ("Item1");
-    g_signal_connect (GTK_MENU_ITEM (item1),
-                      "activate",
-                      G_CALLBACK(item1_activate_cb),
-                      GTK_MENU_SHELL (menu));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item1);
-    gtk_widget_show (item1);
-
-    GtkWidget *item2;
-    item2 = gtk_menu_item_new_with_label ("Item2");
-    g_signal_connect (GTK_MENU_ITEM (item2),
-                      "activate",
-                      G_CALLBACK(item2_activate_cb),
-                      GTK_MENU_SHELL (menu));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item2);
-    gtk_widget_show (item2);
-
-    gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
-
-    return GDK_EVENT_STOP;
-  }
-  return GDK_EVENT_PROPAGATE;
-}
-
-static GtkWidget*
-create_window_canvas (void)
-{
-
-  GtkWidget *window, *scrolled_win, *canvas;
-
-  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_default_size (GTK_WINDOW (window), 640, 600);
-  gtk_widget_show (window);
-  g_signal_connect (window, "destroy", G_CALLBACK (cleanup), NULL);
-
-  scrolled_win = gtk_scrolled_window_new (NULL, NULL);
-  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_win), GTK_SHADOW_IN);
-  gtk_widget_show (scrolled_win);
-  gtk_container_add (GTK_CONTAINER (window), scrolled_win);
-
-  canvas = goo_canvas_new ();
-  gtk_widget_set_size_request (canvas, 600, 450);
-  goo_canvas_set_bounds (GOO_CANVAS (canvas), 0, 0, 1000, 1000);
-  gtk_widget_show (canvas);
-  gtk_container_add (GTK_CONTAINER (scrolled_win), canvas);
-
-  g_signal_connect (GOO_CANVAS (canvas),
-                    "button-release-event",
-                    G_CALLBACK(context_menu_cb),
-                    canvas);
-
-  return canvas;
-}
 
 int node_RADIUS = 30;
 
 static GooCanvasItem*
-create_node (GtkWidget     *canvas,
-             GooCanvasItem *parent,
+create_node (GooCanvasItem *parent,
              double         x,
              double         y,
              gchar         *txt)
@@ -263,6 +194,102 @@ create_node (GtkWidget     *canvas,
 
   setup_dnd_handlers (GOO_CANVAS (canvas), g);
   return g;
+}
+
+static void
+item1_activate_cb (GtkMenuItem *menuitem,
+                   gpointer     user_data)
+{
+  GString *label = g_string_new (NULL);
+  g_string_printf (label, "%d", ++last_id);
+
+  GooCanvasItem *gnodes = GOO_CANVAS_ITEM (user_data);
+  create_node (gnodes, drag_x, drag_y, label->str);
+}
+
+static void
+item2_activate_cb (GtkMenuItem *menuitem,
+                   gpointer     user_data)
+{
+  g_print("item2 activate\n");
+}
+
+static gboolean
+context_menu_cb (GtkWidget      *widget,
+                 GdkEventButton *event,
+                 gpointer        user_data)
+{
+  drag_x = event->x;
+  drag_y = event->y;
+
+  if (called_from_vertex) {
+    called_from_vertex = FALSE;
+
+    GtkWidget *menu;
+    menu = gtk_menu_new ();
+
+    GtkWidget *item2;
+    item2 = gtk_menu_item_new_with_label ("Connect");
+    g_signal_connect (GTK_MENU_ITEM (item2),
+                      "activate",
+                      G_CALLBACK(item2_activate_cb),
+                      GOO_CANVAS_ITEM (user_data));
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item2);
+    gtk_widget_show (item2);
+
+    gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
+
+    return GDK_EVENT_PROPAGATE;
+  };
+
+  if (event->button == GDK_BUTTON_SECONDARY) {
+    GtkWidget *menu;
+    menu = gtk_menu_new ();
+
+    GtkWidget *item1;
+    item1 = gtk_menu_item_new_with_label ("Add");
+    g_signal_connect (GTK_MENU_ITEM (item1),
+                      "activate",
+                      G_CALLBACK(item1_activate_cb),
+                      GOO_CANVAS_ITEM (user_data));
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item1);
+    gtk_widget_show (item1);
+
+    gtk_menu_popup_at_pointer (GTK_MENU (menu), NULL);
+
+    return GDK_EVENT_STOP;
+  }
+  return GDK_EVENT_PROPAGATE;
+}
+
+static GtkWidget*
+create_window_canvas (void)
+{
+
+  GtkWidget *window, *scrolled_win, *local_canvas;
+
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_default_size (GTK_WINDOW (window), 640, 600);
+  gtk_widget_show (window);
+  g_signal_connect (window,
+                    "destroy",
+                    G_CALLBACK (cleanup),
+                    NULL);
+
+  scrolled_win = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_win), GTK_SHADOW_IN);
+  gtk_widget_show (scrolled_win);
+  gtk_container_add (GTK_CONTAINER (window), scrolled_win);
+
+  local_canvas = goo_canvas_new ();
+  gtk_widget_set_size_request (local_canvas, 600, 450);
+  goo_canvas_set_bounds (GOO_CANVAS (local_canvas), 0, 0, 1000, 1000);
+  gtk_widget_show (local_canvas);
+  gtk_container_add (GTK_CONTAINER (scrolled_win), local_canvas);
+
+  return local_canvas;
 }
 
 static void
@@ -302,13 +329,13 @@ connect_two_nodes (GooCanvasItem *gedges,
 int
 main (int argc, char *argv[])
 {
-  GtkWidget *canvas;
+  GString *label = g_string_new (NULL);
   GooCanvasItem *root, *node1, *node2;
   garray = g_array_new (FALSE, FALSE, sizeof (struct IDObject));
 
   gtk_init (&argc, &argv);
 
-  canvas = create_window_canvas();
+  canvas = create_window_canvas ();
   root = goo_canvas_get_root_item (GOO_CANVAS (canvas));
 
   GooCanvasItem *gedges;
@@ -323,9 +350,19 @@ main (int argc, char *argv[])
                                  "y", 0.0,
                                  NULL);
 
-  node1 = create_node(canvas, gnodes, 100.0, 100.0, "A");
-  node2 = create_node(canvas, gnodes, 150.0, 150.0, "B");
-  create_node(canvas, gnodes, 250.0, 150.0, "C");
+  g_signal_connect (GOO_CANVAS (canvas),
+                    "button-release-event",
+                    G_CALLBACK (context_menu_cb),
+                    GOO_CANVAS_ITEM (gnodes));
+
+  g_string_printf (label, "%d", ++last_id);
+  node1 = create_node (gnodes, 100.0, 100.0, label->str);
+
+  g_string_printf (label, "%d", ++last_id);
+  node2 = create_node (gnodes, 150.0, 150.0, label->str);
+
+  g_string_printf (label, "%d", ++last_id);
+  create_node (gnodes, 250.0, 150.0, label->str);
 
   connect_two_nodes (gedges, node1, node2);
 
