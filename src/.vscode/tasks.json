@@ -62,9 +62,11 @@
                 "-lglib-2.0",
                 "-lcairo",
                 "-g",
-                "${file}",
+                "-I${fileDirname}",
+                "${fileDirname}/node.c",
+                "${fileDirname}/main.c",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/main"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
