@@ -9,6 +9,10 @@ gdouble        item_x = 0.0;
 gdouble        item_y = 0.0;
 const gint     node_RADIUS = 30;
 
+gdouble  drag_x = 0.0;
+gdouble  drag_y = 0.0;
+gboolean called_from_vertex = FALSE;
+
 static gboolean
 on_button_press_event_cb (GooCanvasItem  *item,
                           GooCanvasItem  *target_item,
