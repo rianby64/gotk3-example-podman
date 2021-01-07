@@ -12,6 +12,8 @@ const gint     node_RADIUS = 30;
 gdouble  drag_x = 0.0;
 gdouble  drag_y = 0.0;
 gboolean called_from_vertex = FALSE;
+gboolean started_connect_vertex = FALSE;
+GooCanvasItem *last_node = NULL;
 
 static gboolean
 on_button_press_event_cb (GooCanvasItem  *item,
@@ -19,6 +21,8 @@ on_button_press_event_cb (GooCanvasItem  *item,
                           GdkEventButton *event,
                           gpointer        user_data)
 {
+  last_node = GOO_CANVAS_ITEM (item);
+
   if (event->button == GDK_BUTTON_SECONDARY)
   {
     called_from_vertex = TRUE;
@@ -82,54 +86,7 @@ on_motion_notify_event_cb (GooCanvasItem  *item,
                   "x", x,
                   "y", y,
                   NULL);
-    /*
-    struct IDObject idobject1 = g_array_index (garray, struct IDObject, 0);
-    struct IDObject idobject2 = g_array_index (garray, struct IDObject, 1);
 
-
-
-    if (drag_item == idobject1.node) {
-      gdouble px, py;
-      g_object_get (G_OBJECT (idobject2.node),
-                    "x", &px,
-                    "y", &py,
-                    NULL);
-
-      GString *string = g_string_new (NULL);
-      g_string_printf (string,
-                       "M %d %d L %d %d",
-                       (int)x,
-                       (int)y,
-                       (int)px,
-                       (int)py);
-
-      g_object_set (G_OBJECT (idobject1.edge),
-                    "data",
-                    string->str,
-                    NULL);
-    }
-
-    if (drag_item == idobject2.node) {
-      gdouble px, py;
-      g_object_get(G_OBJECT (idobject1.node),
-                   "x", &px,
-                   "y", &py,
-                   NULL);
-
-      GString *string = g_string_new (NULL);
-      g_string_printf (string,
-                       "M %d %d L %d %d",
-                       (int)px,
-                       (int)py,
-                       (int)x,
-                       (int)y);
-
-      g_object_set (G_OBJECT(idobject2.edge),
-                    "data",
-                    string->str,
-                    NULL);
-    }
-    */
     return GDK_EVENT_STOP;
   }
 
@@ -140,18 +97,18 @@ static void
 setup_dnd_handlers (GooCanvas     *local_canvas,
                     GooCanvasItem *item)
 {
-  g_signal_connect (G_OBJECT (item),
+  g_signal_connect (GOO_CANVAS_ITEM (item),
                     "button-press-event",
                     G_CALLBACK (on_button_press_event_cb),
-                    local_canvas);
-  g_signal_connect (G_OBJECT (item),
+                    GOO_CANVAS (local_canvas));
+  g_signal_connect (GOO_CANVAS_ITEM (item),
                     "button-release-event",
                     G_CALLBACK (on_button_release_event_cb),
-                    local_canvas);
-  g_signal_connect (G_OBJECT (item),
+                    GOO_CANVAS (local_canvas));
+  g_signal_connect (GOO_CANVAS_ITEM (item),
                     "motion-notify-event",
                     G_CALLBACK (on_motion_notify_event_cb),
-                    local_canvas);
+                    GOO_CANVAS (local_canvas));
 }
 
 GooCanvasItem*
