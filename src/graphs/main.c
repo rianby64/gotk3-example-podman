@@ -6,10 +6,6 @@
 GtkWidget *canvas = NULL;
 gint       last_id = 0;
 
-GooCanvasItem *start_node = NULL;
-GooCanvasItem *end_node = NULL;
-GooCanvasItem *last_edge = NULL;
-
 static void
 cleanup (void)
 {
@@ -17,7 +13,7 @@ cleanup (void)
 }
 
 static void
-item1_activate_cb (GtkMenuItem *menuitem,
+menu_add_btn_activate_cb (GtkMenuItem *menuitem,
                    gpointer     user_data)
 {
   GString *label;
@@ -43,7 +39,7 @@ last_edge_on_button_press_event_cb (GooCanvasItem  *item,
 }
 
 static void
-item2_activate_cb (GtkMenuItem *menuitem,
+menu_connect_btn_activate_cb (GtkMenuItem *menuitem,
                    gpointer     user_data)
 {
   if (last_edge != NULL) {
@@ -97,7 +93,7 @@ context_connect_menu_cb (GtkWidget      *widget,
     item2 = gtk_menu_item_new_with_label ("Connect");
     g_signal_connect (GTK_MENU_ITEM (item2),
                       "activate",
-                      G_CALLBACK(item2_activate_cb),
+                      G_CALLBACK(menu_connect_btn_activate_cb),
                       GOO_CANVAS_ITEM (user_data));
 
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item2);
@@ -127,7 +123,7 @@ context_add_menu_cb (GtkWidget      *widget,
     item1 = gtk_menu_item_new_with_label ("Add");
     g_signal_connect (GTK_MENU_ITEM (item1),
                       "activate",
-                      G_CALLBACK(item1_activate_cb),
+                      G_CALLBACK(menu_add_btn_activate_cb),
                       GOO_CANVAS_ITEM (user_data));
 
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item1);
@@ -180,7 +176,6 @@ on_motion_notify_event_cb (GtkWidget      *widget,
 static GtkWidget*
 create_window_canvas (void)
 {
-
   GtkWidget *window, *scrolled_win, *local_canvas;
   GooCanvasItem *root, *gnodes, *gedges;
 

@@ -14,7 +14,11 @@ gdouble  drag_y = 0.0;
 gboolean dragged_vertex = FALSE;
 gboolean called_from_vertex = FALSE;
 gboolean started_connect_vertex = FALSE;
+
 GooCanvasItem *last_node = NULL;
+GooCanvasItem *last_edge = NULL;
+GooCanvasItem *start_node = NULL;
+GooCanvasItem *end_node = NULL;
 
 static gboolean
 on_button_press_event_node_cb (GooCanvasItem  *item,
@@ -30,7 +34,7 @@ on_button_press_event_node_cb (GooCanvasItem  *item,
     return GDK_EVENT_STOP;
   }
 
-  if (event->button == GDK_BUTTON_PRIMARY)
+  if (event->button == GDK_BUTTON_PRIMARY && !started_connect_vertex)
   {
       drag_item = item;
       drag_x = event->x;
@@ -62,7 +66,7 @@ on_button_release_event_node_cb (GooCanvasItem  *item,
   if (started_connect_vertex) {
     end_node = GOO_CANVAS_ITEM (item);
     started_connect_vertex = FALSE;
-    drag_item = FALSE;
+    drag_item = NULL;
 
     goo_canvas_item_remove (last_edge);
     last_edge = NULL;
