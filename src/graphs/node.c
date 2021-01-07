@@ -11,12 +11,13 @@ const gint     node_RADIUS = 30;
 
 gdouble  drag_x = 0.0;
 gdouble  drag_y = 0.0;
+gboolean dragged_vertex = FALSE;
 gboolean called_from_vertex = FALSE;
 gboolean started_connect_vertex = FALSE;
 GooCanvasItem *last_node = NULL;
 
 static gboolean
-on_button_press_event_cb (GooCanvasItem  *item,
+on_button_press_event_node_cb (GooCanvasItem  *item,
                           GooCanvasItem  *target_item,
                           GdkEventButton *event,
                           gpointer        user_data)
@@ -53,11 +54,24 @@ on_button_press_event_cb (GooCanvasItem  *item,
 }
 
 static gboolean
-on_button_release_event_cb (GooCanvasItem  *item,
+on_button_release_event_node_cb (GooCanvasItem  *item,
                             GooCanvasItem  *target_item,
                             GdkEventButton *event,
                             gpointer        user_data)
 {
+  if (started_connect_vertex) {
+    end_node = GOO_CANVAS_ITEM (item);
+    started_connect_vertex = FALSE;
+    drag_item = FALSE;
+
+    goo_canvas_item_remove (last_edge);
+    last_edge = NULL;
+
+    // here goes the implementation of connecting two nodes
+
+    return GDK_EVENT_STOP;
+  }
+
   if (drag_item == item && drag_item != NULL)
   {
     goo_canvas_pointer_ungrab (GOO_CANVAS (user_data), drag_item, event->time);
@@ -69,11 +83,42 @@ on_button_release_event_cb (GooCanvasItem  *item,
 }
 
 static gboolean
-on_motion_notify_event_cb (GooCanvasItem  *item,
-                           GooCanvasItem  *target_item,
-                           GdkEventMotion *event,
-                           gpointer        user_data)
+on_motion_notify_event_node_cb (GooCanvasItem  *item,
+                                GooCanvasItem  *target_item,
+                                GdkEventMotion *event,
+                                gpointer        user_data)
 {
+  dragged_vertex = TRUE;
+
+  if (started_connect_vertex) {
+    gdouble x0, y0, x1, y1;
+    g_object_get (G_OBJECT (start_node),
+                  "x", &x0,
+                  "y", &y0,
+                  NULL);
+
+    g_object_get (G_OBJECT (item),
+                  "x", &x1,
+                  "y", &y1,
+                  NULL);
+
+    GString *data;
+    data = g_string_new (NULL);
+    g_string_printf (data,
+                     "M %d %d L %d %d",
+                     (int)x0,
+                     (int)y0,
+                     (int)x1,
+                     (int)y1);
+
+    g_object_set (G_OBJECT (last_edge),
+                    "data",
+                    data->str,
+                    NULL);
+
+    return GDK_EVENT_STOP;
+  }
+
   if (drag_item == item && drag_item != NULL)
   {
     gdouble rel_x = event->x - drag_x;
@@ -99,15 +144,15 @@ setup_dnd_handlers (GooCanvas     *local_canvas,
 {
   g_signal_connect (GOO_CANVAS_ITEM (item),
                     "button-press-event",
-                    G_CALLBACK (on_button_press_event_cb),
+                    G_CALLBACK (on_button_press_event_node_cb),
                     GOO_CANVAS (local_canvas));
   g_signal_connect (GOO_CANVAS_ITEM (item),
                     "button-release-event",
-                    G_CALLBACK (on_button_release_event_cb),
+                    G_CALLBACK (on_button_release_event_node_cb),
                     GOO_CANVAS (local_canvas));
   g_signal_connect (GOO_CANVAS_ITEM (item),
                     "motion-notify-event",
-                    G_CALLBACK (on_motion_notify_event_cb),
+                    G_CALLBACK (on_motion_notify_event_node_cb),
                     GOO_CANVAS (local_canvas));
 }
 

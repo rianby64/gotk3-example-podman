@@ -107,6 +107,7 @@ context_connect_menu_cb (GtkWidget      *widget,
 
     return GDK_EVENT_STOP;
   };
+
   return GDK_EVENT_PROPAGATE;
 }
 
@@ -136,6 +137,7 @@ context_add_menu_cb (GtkWidget      *widget,
 
     return GDK_EVENT_STOP;
   }
+
   return GDK_EVENT_PROPAGATE;
 }
 
@@ -144,7 +146,7 @@ on_motion_notify_event_cb (GtkWidget      *widget,
                            GdkEventMotion *event,
                            gpointer        user_data)
 {
-  if (started_connect_vertex) {
+  if (started_connect_vertex && !dragged_vertex) {
     gdouble x, y;
     g_object_get (G_OBJECT (start_node),
                   "x", &x,
@@ -165,8 +167,13 @@ on_motion_notify_event_cb (GtkWidget      *widget,
                     data->str,
                     NULL);
 
+    dragged_vertex = FALSE;
+
     return GDK_EVENT_STOP;
   }
+
+  dragged_vertex = FALSE;
+
   return GDK_EVENT_PROPAGATE;
 }
 
