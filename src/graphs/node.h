@@ -11,7 +11,7 @@ typedef struct _edge {
 } Edge;
 
 typedef struct _graph {
-  GObject *node;
+  GooCanvasItem *node;
   GArray *edges_in;
   GArray *edges_out;
 } Graph;

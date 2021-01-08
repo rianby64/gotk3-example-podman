@@ -108,22 +108,53 @@ on_button_release_event_node_cb (GooCanvasItem *item,
     new_edge.start_node = start_node;
     new_edge.end_node = end_node;
 
-    Graph start;
-    start.node = G_OBJECT (start_node);
-    start.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
-    start.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
-    g_array_append_val (start.edges_out, new_edge);
-    g_array_append_val (graph, start);
+    Graph *found = NULL;
 
-    Graph end;
-    end.node = G_OBJECT (end_node);
-    end.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
-    end.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
-    g_array_append_val (end.edges_in, new_edge);
-    g_array_append_val (graph, end);
+    // ADD start_node
+    for (guint i = 0; i < graph->len; i++) {
+      found = &g_array_index (graph, Graph, i);
+      if (found->node == start_node) {
+        break;
+      }
+
+      found = NULL;
+    }
+
+    if (found == NULL) {
+      Graph new_node;
+      new_node.node = start_node;
+      new_node.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
+      new_node.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
+      g_array_append_val (new_node.edges_out, new_edge);
+      g_array_append_val (graph, new_node);
+    } else {
+      g_array_append_val (found->edges_out, new_edge);
+    }
+
+    // ADD end_node
+    for (guint i = 0; i < graph->len; i++) {
+      found = &g_array_index (graph, Graph, i);
+      if (found->node == end_node) {
+        break;
+      }
+
+      found = NULL;
+    }
+
+    if (found == NULL) {
+      Graph new_node;
+      new_node.node = end_node;
+      new_node.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
+      new_node.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
+      g_array_append_val (new_node.edges_in, new_edge);
+      g_array_append_val (graph, new_node);
+    } else {
+      g_array_append_val (found->edges_in, new_edge);
+    }
 
     goo_canvas_item_remove (last_edge);
     last_edge = NULL;
+
     return GDK_EVENT_STOP;
   }
 
@@ -182,10 +213,7 @@ on_motion_notify_event_node_cb (GooCanvasItem  *item,
     gdouble x = item_x + rel_x;
     gdouble y = item_y + rel_y;
 
-    GObject *_item;
-    _item = G_OBJECT (item);
-
-    g_object_set (_item,
+    g_object_set (G_OBJECT (item),
                   "x", x,
                   "y", y,
                   NULL);
@@ -195,7 +223,7 @@ on_motion_notify_event_node_cb (GooCanvasItem  *item,
     for (guint i = 0; i < graph->len; i++) {
       found = &g_array_index (graph, Graph, i);
 
-      if (found->node == _item) {
+      if (found->node == item) {
         Edge edge;
         gdouble x0, y0, x1, y1;
         GString *path;
