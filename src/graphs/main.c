@@ -9,6 +9,7 @@ gint       last_id = 0;
 static void
 cleanup (void)
 {
+  g_array_free (graph, FALSE);
   gtk_main_quit ();
 }
 
@@ -180,9 +181,9 @@ create_window_canvas (void)
   GooCanvasItem *root, *gnodes, *gedges;
 
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_default_size (GTK_WINDOW (window), 640, 600);
+  gtk_window_set_default_size (GTK_WINDOW (window), 300, 300);
   gtk_widget_show (window);
-  g_signal_connect (window,
+  g_signal_connect (GTK_WINDOW (window),
                     "destroy",
                     G_CALLBACK (cleanup),
                     NULL);
@@ -193,8 +194,8 @@ create_window_canvas (void)
   gtk_container_add (GTK_CONTAINER (window), scrolled_win);
 
   local_canvas = goo_canvas_new ();
-  gtk_widget_set_size_request (local_canvas, 600, 450);
-  goo_canvas_set_bounds (GOO_CANVAS (local_canvas), 0, 0, 1000, 1000);
+  gtk_widget_set_size_request (local_canvas, 300, 300);
+  goo_canvas_set_bounds (GOO_CANVAS (local_canvas), 0, 0, 300, 300);
   gtk_widget_show (local_canvas);
   gtk_container_add (GTK_CONTAINER (scrolled_win), local_canvas);
 
