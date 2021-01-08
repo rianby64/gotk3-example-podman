@@ -20,6 +20,8 @@ GooCanvasItem *last_edge = NULL;
 GooCanvasItem *start_node = NULL;
 GooCanvasItem *end_node = NULL;
 
+GArray *graph = NULL;
+
 static gboolean
 on_button_press_event_node_cb (GooCanvasItem  *item,
                           GooCanvasItem  *target_item,
@@ -58,7 +60,7 @@ on_button_press_event_node_cb (GooCanvasItem  *item,
 }
 
 static gboolean
-on_button_release_event_node_cb (GooCanvasItem  *item,
+on_button_release_event_node_cb (GooCanvasItem *item,
                             GooCanvasItem  *target_item,
                             GdkEventButton *event,
                             gpointer        user_data)
@@ -68,11 +70,60 @@ on_button_release_event_node_cb (GooCanvasItem  *item,
     started_connect_vertex = FALSE;
     drag_item = NULL;
 
+    // here goes the implementation of connecting two nodes
+    if (start_node == end_node) {
+      return GDK_EVENT_STOP;
+    }
+
+    GooCanvasItem *new_line;
+    Edge new_edge;
+    GooCanvasItem *gedges = NULL;
+    gdouble x0, y0, x1, y1;
+
+    g_object_get (G_OBJECT (start_node),
+                  "x", &x0,
+                  "y", &y0,
+                  NULL);
+
+    g_object_get (G_OBJECT (end_node),
+                  "x", &x1,
+                  "y", &y1,
+                  NULL);
+
+    gedges = goo_canvas_item_get_parent (last_edge);
+
+    GString *path;
+    path = g_string_new (NULL);
+    g_string_printf (path, "M %d %d L %d %d",
+                    (int)x0,
+                    (int)y0,
+                    (int)x1,
+                    (int)y1);
+
+    new_line = goo_canvas_path_new (gedges, path->str,
+                                    "stroke-color", "blue",
+                                    NULL);
+
+    new_edge.line = new_line;
+    new_edge.start_node = start_node;
+    new_edge.end_node = end_node;
+
+    Graph start;
+    start.node = G_OBJECT (start_node);
+    start.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
+    start.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
+    g_array_append_val (start.edges_out, new_edge);
+    g_array_append_val (graph, start);
+
+    Graph end;
+    end.node = G_OBJECT (end_node);
+    end.edges_in = g_array_new (FALSE, FALSE, sizeof (Edge));
+    end.edges_out = g_array_new (FALSE, FALSE, sizeof (Edge));
+    g_array_append_val (end.edges_in, new_edge);
+    g_array_append_val (graph, end);
+
     goo_canvas_item_remove (last_edge);
     last_edge = NULL;
-
-    // here goes the implementation of connecting two nodes
-
     return GDK_EVENT_STOP;
   }
 
@@ -131,10 +182,68 @@ on_motion_notify_event_node_cb (GooCanvasItem  *item,
     gdouble x = item_x + rel_x;
     gdouble y = item_y + rel_y;
 
-    g_object_set (G_OBJECT (item),
+    GObject *_item;
+    _item = G_OBJECT (item);
+
+    g_object_set (_item,
                   "x", x,
                   "y", y,
                   NULL);
+
+    // search for the given node in graph
+    Graph *found = NULL;
+    for (guint i = 0; i < graph->len; i++) {
+      found = &g_array_index (graph, Graph, i);
+
+      if (found->node == _item) {
+        Edge edge;
+        gdouble x0, y0, x1, y1;
+        GString *path;
+
+        for (guint j = 0; j < found->edges_in->len; j++) {
+          edge = g_array_index (found->edges_in, Edge, j);
+          g_object_get (G_OBJECT (edge.start_node),
+                        "x", &x0,
+                        "y", &y0,
+                        NULL);
+
+          path = g_string_new (NULL);
+          g_string_printf (path, "M %d %d L %d %d",
+                          (int)x0,
+                          (int)y0,
+                          (int)x,
+                          (int)y);
+
+          g_object_set (G_OBJECT (edge.line),
+                        "data",
+                        path->str,
+                        NULL);
+        }
+
+        for (guint j = 0; j < found->edges_out->len; j++) {
+          edge = g_array_index (found->edges_out, Edge, j);
+          g_object_get (G_OBJECT (edge.end_node),
+                        "x", &x1,
+                        "y", &y1,
+                        NULL);
+
+          path = g_string_new (NULL);
+          g_string_printf (path, "M %d %d L %d %d",
+                          (int)x,
+                          (int)y,
+                          (int)x1,
+                          (int)y1);
+
+          g_object_set (G_OBJECT (edge.line),
+                        "data",
+                        path->str,
+                        NULL);
+        }
+
+        break;
+      }
+      found = NULL;
+    }
 
     return GDK_EVENT_STOP;
   }

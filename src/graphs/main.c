@@ -232,6 +232,7 @@ main (int argc, char *argv[])
   gtk_init (&argc, &argv);
 
   canvas = create_window_canvas ();
+  graph = g_array_new (FALSE, FALSE, sizeof (Graph));
 
   gtk_main ();
   return 0;
