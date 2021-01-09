@@ -1,23 +1,6 @@
 FROM rianby64/vscode AS go-gtk3
 
-RUN useradd rianby64
-
-USER rianby64
-
-ENV HOME=/home/rianby64
-
-WORKDIR $HOME
-
-USER root
-
-USER rianby64
-
-ENV GOPATH=$HOME/go
-ENV GOBIN=$GOPATH/bin
-
-RUN mkdir -p $GOPATH
-
-USER root
+RUN yum update -y
 
 RUN yum install -y \
     golang.x86_64 \
@@ -28,7 +11,17 @@ RUN yum install -y \
     gtk3-devel.x86_64 \
     gdb.x86_64
 
+RUN useradd rianby64
+
 USER rianby64
+
+ENV HOME=/home/rianby64
+ENV GOPATH=$HOME/go
+ENV GOBIN=$GOPATH/bin
+
+WORKDIR $HOME
+
+RUN mkdir -p $GOPATH
 
 RUN go get -v github.com/ramya-rao-a/go-outline \
     github.com/go-delve/delve/cmd/dlv \
